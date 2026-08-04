@@ -114,6 +114,44 @@ RSpec.describe Signlift::SignatureRequests do
     end
   end
 
+  # The window this reads is the one where a signature is acquired but the
+  # request is still assembling its documents: the signing url is already null
+  # there, so absence cannot be told from refusal without the per-signer status.
+  describe ".all_signers_signed?" do
+    def response_with(*statuses)
+      {"signers" => statuses.map { |status| {"status" => status} }}
+    end
+
+    it "is true once every signer has signed" do
+      expect(described_class.all_signers_signed?(response_with("signed", "signed")))
+        .to be(true)
+    end
+
+    it "is false while one of them still has to" do
+      expect(described_class.all_signers_signed?(response_with("signed", "notified")))
+        .to be(false)
+    end
+
+    it "is false for a signer carrying no status at all" do
+      expect(described_class.all_signers_signed?({"signers" => [{}]})).to be(false)
+    end
+
+    # A request with no signer has not been signed by everyone, it has been
+    # signed by no one -- answering true there would resume a session that has
+    # nothing behind it.
+    it "is false when the request lists no signer" do
+      expect(described_class.all_signers_signed?("signers" => [])).to be(false)
+    end
+
+    it "is false when the response carries no signers key" do
+      expect(described_class.all_signers_signed?({})).to be(false)
+    end
+
+    it "is false when signers is not a list" do
+      expect(described_class.all_signers_signed?("signers" => "signed")).to be(false)
+    end
+  end
+
   describe ".signed_document_url" do
     it "reads the first download url of the API response" do
       response = {"download_urls" => [{"signed_url" => "https://signed.test/a.pdf"}]}

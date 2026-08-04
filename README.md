@@ -92,6 +92,18 @@ Signlift::SignatureRequests::TERMINAL_FAILED_STATUSES.include?(response["status"
 The API has four statuses: `draft`, `pending`, `completed` and `expired`. Only
 `expired` is a terminal failure.
 
+Signers carry a status of their own (`pending` → `notified` → `signed`), and it
+is the only explicit signal that a signature is acquired while the request is
+still assembling its documents:
+
+```ruby
+Signlift::SignatureRequests.all_signers_signed?(response)
+```
+
+In that window `signing_url` is already null. Reading that absence as a
+statement — rather than asking the signers — is how a resumed session ends up
+handing an empty page to someone who has already signed.
+
 ## Documents
 
 ```ruby

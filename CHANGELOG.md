@@ -14,7 +14,7 @@ Line and branch coverage both stand at 100%.
 - `Signlift::SignatureRequests` — `create`, `find`, `audit_logs`, plus the
   readers that keep knowledge of the response shape in one place
   (`signing_url`, `signed_document_url`, `webhook_signed_document_url`,
-  `webhook_document_ids`).
+  `webhook_document_ids`, `all_signers_signed?`).
 - `Signlift::Documents.upload` — multipart upload.
 - `Signlift::Webhooks::SignatureVerifier.valid?` — HMAC-SHA256 comparison in
   constant time.

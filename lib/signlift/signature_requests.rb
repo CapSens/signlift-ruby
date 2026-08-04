@@ -2,6 +2,7 @@ module Signlift
   module SignatureRequests
     PATH = "/signature_requests".freeze
     COMPLETED_STATUS = "completed".freeze
+    SIGNER_SIGNED_STATUS = "signed".freeze
     # The only terminal failure the API has: its statuses are draft, pending,
     # completed and expired.
     TERMINAL_FAILED_STATUSES = ["expired"].freeze
@@ -26,6 +27,18 @@ module Signlift
 
       def signed_document_url(response)
         response.dig("download_urls", 0, "signed_url")
+      end
+
+      # Per-signer status (pending → notified → signed) is the only explicit
+      # signal that a signature is acquired while the request itself is still
+      # assembling its documents. In that window signing_url is already null,
+      # and reading that absence as a statement is how a resumed session ends up
+      # handing the tunnel an empty iframe.
+      def all_signers_signed?(response)
+        signers = response["signers"]
+        return false unless signers.is_a?(Array) && signers.any?
+
+        signers.all? { |signer| signer["status"] == SIGNER_SIGNED_STATUS }
       end
 
       # The request.completed webhook carries the presigned URLs under a
