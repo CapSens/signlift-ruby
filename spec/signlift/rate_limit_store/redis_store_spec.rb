@@ -65,5 +65,16 @@ RSpec.describe Signlift::RateLimitStore::RedisStore do
       expect { store.write({"remaining" => 0}) }.not_to raise_error
       expect(reported.first).to be_a(Redis::CannotConnectError)
     end
+
+    # on_error is optional, and a store built without one still has to fail open:
+    # reporting is what the caller may skip, not the swallowing.
+    context "and nothing was given to report with" do
+      subject(:store) { described_class.new(client: client, key: "signlift:rate_limit:abc") }
+
+      it "still fails open", :aggregate_failures do
+        expect(store.read).to be_nil
+        expect { store.write({"remaining" => 0}) }.not_to raise_error
+      end
+    end
   end
 end

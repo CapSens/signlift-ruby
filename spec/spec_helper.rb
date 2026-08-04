@@ -1,5 +1,13 @@
 require "bundler/setup"
 
+# Started before the gem is loaded, or the files required at load time count as
+# uncovered whatever the examples do with them.
+require "simplecov"
+SimpleCov.start do
+  add_filter "/spec/"
+  enable_coverage :branch
+end
+
 require "signlift"
 
 require "webmock/rspec"

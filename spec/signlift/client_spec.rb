@@ -65,6 +65,56 @@ RSpec.describe Signlift::Client do
       expect(stub).to have_been_requested
     end
   end
+  describe "the request URL" do
+    it "takes a path that does not open with a separator" do
+      stub = stub_request(:get, "#{api_url}/health").to_return(status: 200, body: "{}")
+
+      client.get("health")
+
+      expect(stub).to have_been_requested
+    end
+
+    # The port is what a mock server or a tunnelled environment moves, and
+    # dropping it sends every call to the default one instead.
+    context "when the endpoint carries a port of its own" do
+      let(:api_url) { "http://localhost:4010/api/v1" }
+
+      it "keeps it" do
+        stub = stub_request(:get, "http://localhost:4010/api/v1/health")
+               .to_return(status: 200, body: "{}")
+
+        client.get("/health")
+
+        expect(stub).to have_been_requested
+      end
+    end
+
+    # Which port is implied depends on the scheme, and 443 is not it on http:
+    # reading it as default there would drop a port that has to be sent. The
+    # omission of a genuinely default port is what every other example here
+    # rests on, the endpoint being https on 443.
+    context "when the endpoint sits on a port that is default for another scheme" do
+      let(:api_url) { "http://signlift.test:443/api/v1" }
+
+      it "keeps it" do
+        stub = stub_request(:get, "http://signlift.test:443/api/v1/health")
+               .to_return(status: 200, body: "{}")
+
+        client.get("/health")
+
+        expect(stub).to have_been_requested
+      end
+    end
+  end
+
+  describe "a response that carries no body" do
+    it "reads as an empty payload rather than raising" do
+      stub_request(:get, "#{api_url}/health").to_return(status: 200, body: "")
+
+      expect(client.get("/health")).to eq({})
+    end
+  end
+
   describe "the rate limit budget" do
     let(:headers) do
       {
