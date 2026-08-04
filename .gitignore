@@ -1,0 +1,41 @@
+# Ignore bundler config
+/.bundle/
+
+# Ignore local Ruby environment and artifacts
+/.ruby-version
+/.ruby-gemset
+/.rbenv-vars
+/.tool-versions
+
+# Ignore built gems
+/*.gem
+/pkg/
+
+# Ignore temporary build and packaging artifacts
+/coverage/
+/doc/
+/tmp/
+/log/
+
+# Ignore local test output
+/spec/reports/
+/spec/examples.txt
+
+# Ignore byebug and pry history
+.byebug_history
+.pry_history
+
+# Ignore OS and editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Ignore environment variables file
+.env
+.env.*
+
+# Ignore Claude Code files
+.claude/
+CLAUDE.md
