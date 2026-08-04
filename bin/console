@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "signlift"
+require "irb"
+
+# Nothing is configured here on purpose: an api_key read from the environment
+# would make an unthinking call in this console hit whichever organisation and
+# environment that key belongs to, and every call counts against its budget.
+#
+#   Signlift.configure { |config| config.api_key = "..." }
+#   Signlift::SignatureRequests.find("...")
+#   Signlift.rate_limit.remaining
+
+IRB.start(__FILE__)

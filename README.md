@@ -4,7 +4,12 @@ Ruby client for the [Signlift](https://app.signlift.eu) electronic signature
 API: signature requests, document upload, webhook signature verification and
 rate limit awareness.
 
-Built on the standard library alone — the gem declares no runtime dependency.
+Built on the standard library. Its one runtime dependency is `logger`, which
+used to be part of that library and stops being a default gem in Ruby 4.0;
+nothing else is asked of the applications that embed it. The Redis-backed rate
+limit store takes its client by injection, so it needs no `redis` either.
+
+Tested on Ruby 3.1 and 3.4.
 
 ## Installation
 
@@ -192,19 +197,60 @@ The store **fails open**: when it cannot be reached it answers "nothing known"
 and the call goes through. Refusing every call because Redis is down would turn
 an outage of ours into an outage of the signature journey.
 
+## Testing an application that embeds it
+
+Both the configuration and the client are memoised on the module, and the rate
+limit state outlives a single call by design. Left alone, all three carry from
+one example into the next, and which ones they reach depends on the seed.
+
+```ruby
+RSpec.configure do |config|
+  config.before { Signlift.reset! }
+end
+```
+
+`reset!` drops the memoised configuration and client. It does **not** empty a
+store you injected: a `RedisStore` shared with the rest of the platform will
+hand your suite a budget some other process spent, and one example recording an
+exhausted budget makes the client refuse locally in every example running inside
+the window. Give the suite a store of its own:
+
+```ruby
+config.before do
+  Signlift.configuration.rate_limit_store = Signlift::RateLimitStore::Memory.new
+end
+```
+
+Requests are plain `Net::HTTP`, so WebMock or any equivalent stubs them without
+help from the gem.
+
 ## Development
 
 ```bash
-bundle install
+bin/setup      # install dependencies and run the suite
+bin/console    # IRB with the gem loaded, configured with nothing
 bundle exec rake spec
 ```
 
+The suite runs outside Rails and covers 100% of lines and branches; SimpleCov
+fails the build below either. Tested on Ruby 3.1 and 3.4 in CI, the two ends of
+what the gemspec promises.
+
 ## Releasing
+
+The gem is **not** published on RubyGems — `rake release` is disabled for that
+reason. Consumers install it straight from this repository, pinned to a tag.
 
 1. Bump `Signlift::VERSION` in `lib/signlift/version.rb`
 2. Describe the change in `CHANGELOG.md`
 3. Commit, then tag: `git tag vX.Y.Z && git push origin master --tags`
 4. Point consumers at the new tag in their `Gemfile`
+
+⚠️ A tag is what consumers resolve against, so treat one as immutable once
+pushed. Moving it changes what they install without changing their lockfile:
+`bundle install` on a fresh checkout picks up the new commit while an existing
+one keeps the old, and nothing in either repository records the difference.
+Ship a new version instead.
 
 ## License
 

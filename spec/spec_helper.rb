@@ -6,6 +6,11 @@ require "simplecov"
 SimpleCov.start do
   add_filter "/spec/"
   enable_coverage :branch
+
+  # Held where the suite already stands rather than at some tolerable distance
+  # below it. The surface is small enough that a path nobody walks is a decision,
+  # and this is what makes it one instead of a slow drift.
+  minimum_coverage line: 100, branch: 100
 end
 
 require "signlift"
