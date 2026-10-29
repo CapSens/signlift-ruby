@@ -18,6 +18,7 @@ module Signlift
   require "signlift/client"
   require "signlift/documents"
   require "signlift/signature_requests"
+  require "signlift/organization"
   require "signlift/webhooks/signature_verifier"
 
   class << self

@@ -104,6 +104,31 @@ In that window `signing_url` is already null. Reading that absence as a
 statement — rather than asking the signers — is how a resumed session ends up
 handing an empty page to someone who has already signed.
 
+## Organization
+
+What the organization behind the API key can do with it: plan, features and
+effective limits, back-office overrides included. The environment reported is
+the one of the key, not of the organization.
+
+```ruby
+organization = Signlift::Organization.retrieve
+# => {"id" => 12, "name" => "Acme", "plan" => "pro", "environment" => "sandbox",
+#     "features" => {"sms_otp" => true, "initials" => true, "branding_profiles" => false},
+#     "limits" => {"documents_per_request" => 5, "branding_profiles" => 0,
+#                  "rate_limit" => {"per_minute" => 60, "per_hour" => 1000}}}
+
+Signlift::Organization.feature?(organization, :sms_otp)                  # true
+Signlift::Organization.limit(organization, :documents_per_request)       # 5
+Signlift::Organization.limit(organization, :rate_limit, :per_hour)       # 1000
+Signlift::Organization.unlimited?(organization, :branding_profiles)      # false
+```
+
+A limit of `nil` means unlimited, as `limit` returns `nil` for it, so
+`unlimited?` is the reader that tells a lifted ceiling from a key the response
+does not carry. In `sandbox` no SMS is ever sent, whatever `features.sms_otp`
+says. A production key without paid access raises
+`Signlift::PaymentRequiredError`.
+
 ## Documents
 
 ```ruby

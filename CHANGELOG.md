@@ -1,5 +1,9 @@
 [Unreleased]
 -------------------------
+- `Signlift::Organization.retrieve` — `GET /organization`: plan, features and
+  effective limits of the organization behind the API key, returned as the bare
+  parsed object. Its readers `feature?`, `limit` and `unlimited?` keep the
+  response shape in one place; a `null` limit means unlimited.
 
 v0.1.0
 -------------------------
