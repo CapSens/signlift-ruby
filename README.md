@@ -137,6 +137,15 @@ until it is, sending raises a 403 `sms_service_disabled`, sandbox included. It
 does not cover the signature codes, which Signlift sends itself as part of
 the signing flow.
 
+Whether the service is usable, and its monthly cap, are read from the
+organization:
+
+```ruby
+organization = Signlift::Organization.retrieve
+Signlift::Organization.feature?(organization, :transactional_sms)        # not :sms_otp, which is about signature codes
+Signlift::Organization.limit(organization, :transactional_sms_per_month) # e.g. 10000
+```
+
 ```ruby
 message = Signlift::SmsMessages.create(
   to: "+33612345678",                  # E.164
