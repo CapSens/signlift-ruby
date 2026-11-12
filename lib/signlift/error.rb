@@ -49,6 +49,7 @@ module Signlift
         when 402 then PaymentRequiredError
         when 403 then ApiError
         when 404 then NotFoundError
+        when 409 then ConflictError
         when 429 then RateLimitedError
         when 422 then ValidationError
         when 500..599 then ServerError
@@ -65,6 +66,9 @@ module Signlift
   end
 
   class NotFoundError < ApiError
+  end
+
+  class ConflictError < ApiError
   end
 
   class RateLimitedError < ApiError
