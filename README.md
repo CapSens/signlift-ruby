@@ -134,7 +134,8 @@ says. A production key without paid access raises
 Single-segment SMS (a withdrawal code, a reminder, a notification), billed per
 message. The service is enabled on request, for the Pro and Enterprise plans:
 until it is, sending raises a 403 `sms_service_disabled`, sandbox included. It
-does not cover the signature codes, which have their own `otp_channel`.
+does not cover the signature codes, which Signlift sends itself as part of
+the signing flow.
 
 ```ruby
 message = Signlift::SmsMessages.create(
@@ -144,7 +145,7 @@ message = Signlift::SmsMessages.create(
   reference: "order-1042"              # optional idempotency key, 100 characters
 )
 # => {"id" => "...", "status" => "queued", "to" => "+33612345678", "sender" => "Signlift",
-#     "country" => "FR", "unit_price" => "0.07", "currency" => "EUR",
+#     "country" => "FR", "unit_price" => 0.08, "currency" => "EUR",
 #     "reference" => "order-1042", "environment" => "production", "created_at" => "..."}
 ```
 
