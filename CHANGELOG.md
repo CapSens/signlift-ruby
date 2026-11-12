@@ -4,6 +4,18 @@
   effective limits of the organization behind the API key, returned as the bare
   parsed object. Its readers `feature?`, `limit` and `unlimited?` keep the
   response shape in one place; a `null` limit means unlimited.
+- `Signlift::SmsMessages` — transactional SMS: `create` (`POST /sms_messages`,
+  `reference` is left out of the payload when nil) and `find`
+  (`GET /sms_messages/:id`), with the status constants and the readers `final?`
+  (`delivered`, `undelivered`, `failed`, `simulated`) and `billed?` (`sent`,
+  `delivered`, `undelivered`). `sent` is not final and may never move on without
+  a delivery report, so a follow-up loop must be bounded.
+- **Behaviour change:** a 409 now raises `Signlift::ConflictError` instead of a
+  bare `Signlift::ApiError`. `ConflictError` is a subclass of `ApiError`, so a
+  `rescue Signlift::ApiError` keeps working, but code that compares the exact
+  class (`error.class == Signlift::ApiError`, `raise_error` on the exact class
+  in a test) breaks for a 409. A 403 stays an `ApiError`; tell
+  `sms_service_disabled` from `sms_quota_exceeded` by `error.code`.
 
 v0.1.0
 -------------------------
