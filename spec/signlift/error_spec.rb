@@ -17,10 +17,19 @@ RSpec.describe Signlift::ApiError do
       expect(err.message).to eq("Paid plan required")
     end
 
-    it "falls back to a generic ApiError for unmapped statuses" do
-      err = described_class.from_response(409, {"error" => {"code" => "conflict"}})
-      expect(err.class).to eq(Signlift::ApiError)
+    it "maps 409 to ConflictError, which is still an ApiError", :aggregate_failures do
+      err = described_class.from_response(409, {"error" => {"code" => "reference_conflict"}})
+
+      expect(err).to be_a(Signlift::ConflictError)
+      expect(err).to be_a(described_class)
       expect(err.status).to eq(409)
+      expect(err.code).to eq("reference_conflict")
+    end
+
+    it "falls back to a generic ApiError for unmapped statuses", :aggregate_failures do
+      err = described_class.from_response(418, {"error" => {"code" => "teapot"}})
+      expect(err.class).to eq(Signlift::ApiError)
+      expect(err.status).to eq(418)
     end
 
     it "maps a refusal for too many requests", :aggregate_failures do

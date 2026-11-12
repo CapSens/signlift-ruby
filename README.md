@@ -129,6 +129,89 @@ does not carry. In `sandbox` no SMS is ever sent, whatever `features.sms_otp`
 says. A production key without paid access raises
 `Signlift::PaymentRequiredError`.
 
+## Transactional SMS
+
+Single-segment SMS (a withdrawal code, a reminder, a notification), billed per
+message. The service is enabled on request, for the Pro and Enterprise plans:
+until it is, sending raises a 403 `sms_service_disabled`, sandbox included. It
+does not cover the signature codes, which Signlift sends itself as part of
+the signing flow.
+
+Whether the service is usable, and its monthly cap, are read from the
+organization:
+
+```ruby
+organization = Signlift::Organization.retrieve
+Signlift::Organization.feature?(organization, :transactional_sms)        # not :sms_otp, which is about signature codes
+Signlift::Organization.limit(organization, :transactional_sms_per_month) # e.g. 10000
+```
+
+```ruby
+message = Signlift::SmsMessages.create(
+  to: "+33612345678",                  # E.164
+  body: "Your parcel arrives tomorrow between 9am and 12pm.",
+  sender: "Signlift",                  # one declared for your organization
+  reference: "order-1042"              # optional idempotency key, 100 characters
+)
+# => {"id" => "...", "status" => "queued", "to" => "+33612345678", "sender" => "Signlift",
+#     "country" => "FR", "unit_price" => 0.08, "currency" => "EUR",
+#     "reference" => "order-1042", "environment" => "production", "created_at" => "..."}
+```
+
+With a `reference`, the call can be retried safely: the same `reference` with the
+same `to`, `body` and `sender` never sends a second SMS and answers with the
+existing message. The gem returns the body as it does everywhere else and does
+not tell a first call from a replay; the caller has no need to, since the
+returned `status` says where the message stands.
+
+Delivery is asynchronous, so follow it with `find`. `final?` is true once the
+outcome is settled (`delivered`, `undelivered`, `failed`, `simulated`). A
+message that reaches `sent` may **never** move on if no delivery report
+arrives: bound any follow-up loop.
+
+```ruby
+5.times do
+  message = Signlift::SmsMessages.find(message["id"])
+  break if Signlift::SmsMessages.final?(message)
+
+  sleep 60
+end
+
+Signlift::SmsMessages.billed?(message)   # true for sent, delivered, undelivered
+```
+
+`find` goes through the same rate limit budget as every other call, so keep the
+cadence slow. The API never returns `body`, and `to` becomes `nil` once the
+number is purged (30 days after creation): keep the text on your side.
+
+`unit_price` and `currency` are `nil` for an Enterprise organization, whose
+prices are set by contract.
+
+Errors:
+
+| Status | Class | `code` |
+|---|---|---|
+| 403 | `Signlift::ApiError` | `sms_service_disabled`, `sms_quota_exceeded` |
+| 409 | `Signlift::ConflictError` | `reference_conflict` |
+| 422 | `Signlift::ValidationError` | `invalid_recipient`, `unsupported_destination`, `invalid_body`, `unknown_sender`, `sender_unavailable`, `validation_error` |
+
+A 403 is told apart by `error.code`: `sms_service_disabled` means the service is
+not enabled (or the plan is not eligible), `sms_quota_exceeded` that the monthly
+ceiling is reached. Neither carries a `Retry-After`, and waiting does not lift
+the second before the next month.
+
+```ruby
+begin
+  Signlift::SmsMessages.create(to: to, body: body, sender: "Signlift", reference: reference)
+rescue Signlift::ApiError => error
+  raise unless error.status == 403 && error.code == "sms_quota_exceeded"
+
+  notify_ops(error)
+end
+```
+
+Full reference: https://doc.signlift.eu.
+
 ## Documents
 
 ```ruby
@@ -169,6 +252,7 @@ several documents returns `nil` rather than risk handing back the wrong PDF.
 | 401 | `Signlift::AuthenticationError` |
 | 402 | `Signlift::PaymentRequiredError` |
 | 404 | `Signlift::NotFoundError` |
+| 409 | `Signlift::ConflictError` |
 | 422 | `Signlift::ValidationError` |
 | 429 | `Signlift::RateLimitedError` |
 | 5xx | `Signlift::ServerError` |
