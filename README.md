@@ -184,8 +184,11 @@ Signlift::SmsMessages.billed?(message)   # true for sent, delivered, undelivered
 cadence slow. The API never returns `body`, and `to` becomes `nil` once the
 number is purged (30 days after creation): keep the text on your side.
 
-`unit_price` and `currency` are `nil` for an Enterprise organization, whose
-prices are set by contract.
+`unit_price` is the billed price, the organization's discount included, and
+can be `0` when its SMS are offered: `billed?` stays true for such a message,
+which counts towards the monthly usage at no charge. `unit_price` and
+`currency` are `nil` for an Enterprise organization, whose prices are set by
+contract.
 
 Errors:
 
