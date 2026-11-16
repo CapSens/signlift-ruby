@@ -169,6 +169,16 @@ outcome is settled (`delivered`, `undelivered`, `failed`, `simulated`). A
 message that reaches `sent` may **never** move on if no delivery report
 arrives: bound any follow-up loop.
 
+When the recipient says the SMS did not arrive (a "Resend" button), pass the
+first message's `id` as `resend_of`. The resend goes first through another
+provider than the first SMS, when the country has one. The first message must
+be an API SMS of your organization, in the key's environment, sent to the same
+`to`; otherwise the call raises `Signlift::ValidationError` (`validation_error`).
+
+```ruby
+Signlift::SmsMessages.create(to: to, body: body, sender: "Signlift", resend_of: message["id"])
+```
+
 ```ruby
 5.times do
   message = Signlift::SmsMessages.find(message["id"])

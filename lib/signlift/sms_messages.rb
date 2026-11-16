@@ -12,9 +12,12 @@ module Signlift
     BILLED_STATUSES = [SENT_STATUS, DELIVERED_STATUS, UNDELIVERED_STATUS].freeze
 
     class << self
-      def create(to:, body:, sender:, reference: nil)
+      # resend_of is the id of an earlier SMS to the same number : the resend
+      # goes first through another provider.
+      def create(to:, body:, sender:, reference: nil, resend_of: nil)
         payload = {to: to, body: body, sender: sender}
         payload[:reference] = reference unless reference.nil?
+        payload[:resend_of] = resend_of unless resend_of.nil?
         Signlift.client.post_json(PATH, payload)
       end
 
