@@ -197,11 +197,16 @@ Errors:
 | 403 | `Signlift::ApiError` | `sms_service_disabled`, `sms_quota_exceeded` |
 | 409 | `Signlift::ConflictError` | `reference_conflict` |
 | 422 | `Signlift::ValidationError` | `invalid_recipient`, `unsupported_destination`, `invalid_body`, `unknown_sender`, `sender_unavailable`, `validation_error` |
+| 503 | `Signlift::ServerError` | `sms_temporarily_unavailable` |
 
 A 403 is told apart by `error.code`: `sms_service_disabled` means the service is
 not enabled (or the plan is not eligible), `sms_quota_exceeded` that the monthly
 ceiling is reached. Neither carries a `Retry-After`, and waiting does not lift
 the second before the next month.
+
+A `503 sms_temporarily_unavailable` means no provider can take a message to
+this number for now. Nothing was recorded: send the same call again after the
+`Retry-After` delay, in seconds.
 
 ```ruby
 begin
