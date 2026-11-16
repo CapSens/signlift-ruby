@@ -50,12 +50,12 @@ RSpec.describe Signlift::SmsMessages do
       expect(stub).to have_been_requested
     end
 
-    it "sends resend_of when given" do
+    it "sends resend when given" do
       stub = stub_request(:post, "#{api_url}/sms_messages")
-             .with(body: {to: "+33612345678", body: "Hello", sender: "Signlift", resend_of: "sms_first"})
+             .with(body: {to: "+33612345678", body: "Hello", sender: "Signlift", resend: true})
              .to_return(status: 202, body: JSON.generate(message_body))
 
-      described_class.create(to: "+33612345678", body: "Hello", sender: "Signlift", resend_of: "sms_first")
+      described_class.create(to: "+33612345678", body: "Hello", sender: "Signlift", resend: true)
 
       expect(stub).to have_been_requested
     end

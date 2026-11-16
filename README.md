@@ -155,7 +155,7 @@ message = Signlift::SmsMessages.create(
 )
 # => {"id" => "...", "status" => "queued", "to" => "+33612345678", "sender" => "Signlift",
 #     "country" => "FR", "unit_price" => 0.08, "currency" => "EUR",
-#     "reference" => "order-1042", "environment" => "production", "created_at" => "..."}
+#     "reference" => "order-1042", "resend" => false, "environment" => "production", "created_at" => "..."}
 ```
 
 With a `reference`, the call can be retried safely: the same `reference` with the
@@ -169,15 +169,24 @@ outcome is settled (`delivered`, `undelivered`, `failed`, `simulated`). A
 message that reaches `sent` may **never** move on if no delivery report
 arrives: bound any follow-up loop.
 
-When the recipient says the SMS did not arrive (a "Resend" button), pass the
-first message's `id` as `resend_of`. The resend goes first through another
-provider than the first SMS, when the country has one. The first message must
-be an API SMS of your organization, in the key's environment, sent to the same
-`to`; otherwise the call raises `Signlift::ValidationError` (`validation_error`).
+When the recipient says the SMS did not arrive (a "Resend" button), send it
+again with `resend: true`; nothing from the first send needs to be kept. The
+API finds the latest SMS to this `to` sent in the last 30 minutes (same
+organization, key environment) that a provider took, and goes first through
+the other provider. The answer says `"resend" => true` when an earlier SMS was
+found, `false` when the message went out as a first send.
 
 ```ruby
-Signlift::SmsMessages.create(to: to, body: body, sender: "Signlift", resend_of: message["id"])
+Signlift::SmsMessages.create(to: to, body: body, sender: "Signlift", resend: true)
 ```
+
+- **Use a new `reference`, or none.** The `reference` of the first send coming
+  back with `resend: true` raises `Signlift::ConflictError` (`reference_conflict`).
+- The resend goes through the same provider when the country or the sender has
+  a single one, or when the earlier SMS was not taken by a provider yet or its
+  outcome is unknown. In sandbox, `resend` has no effect.
+- A resend is billed and counted in the monthly cap like any message, and the
+  API does not limit their number: throttle the button on your side.
 
 ```ruby
 5.times do
