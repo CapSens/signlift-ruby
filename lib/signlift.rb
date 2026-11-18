@@ -19,6 +19,7 @@ module Signlift
   require "signlift/documents"
   require "signlift/signature_requests"
   require "signlift/webhooks/signature_verifier"
+  require "signlift/returns"
 
   class << self
     def configuration

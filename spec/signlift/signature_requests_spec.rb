@@ -40,6 +40,37 @@ RSpec.describe Signlift::SignatureRequests do
       expect(result).to eq(body)
     end
 
+    it "sends passkey_enabled and success_url untouched" do
+      with_options = {
+        signature_request: payload[:signature_request].merge(
+          passkey_enabled: true,
+          success_url: "https://app.example.com/done?order=7"
+        ),
+      }
+      stub = stub_request(:post, "#{api_url}/signature_requests")
+             .with { |request|
+               sent = JSON.parse(request.body)["signature_request"]
+               sent["passkey_enabled"] == true && sent["success_url"] == "https://app.example.com/done?order=7"
+             }
+             .to_return(status: 201, body: JSON.generate({"id" => 7}))
+
+      described_class.create(with_options)
+
+      expect(stub).to have_been_requested
+    end
+
+    %w[success_url_invalid redirect_scheme_not_declared passkey_not_enabled_for_organization].each do |code|
+      it "exposes the #{code} code of a 422", :aggregate_failures do
+        stub_request(:post, "#{api_url}/signature_requests")
+          .to_return(status: 422, body: JSON.generate({"error" => {"code" => code, "message" => "Refused"}}))
+
+        expect { described_class.create(payload) }.to raise_error(Signlift::ValidationError) { |error|
+          expect(error.code).to eq(code)
+          expect(error.status).to eq(422)
+        }
+      end
+    end
+
     it "raises ValidationError on 422" do
       stub_request(:post, "#{api_url}/signature_requests")
         .to_return(
