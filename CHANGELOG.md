@@ -1,5 +1,15 @@
 [Unreleased]
 -------------------------
+- `Signlift::Returns.verify!` / `.valid?` — verifies the signed `signlift_*`
+  parameters Signlift appends to a request's `success_url` after a full-page
+  signature (HMAC-SHA256 in constant time, 5 minute freshness, 30 second clock
+  skew, each parameter once). Takes a URL, a query string or a Hash, returns a
+  `VerifiedReturn` or raises `Signlift::Returns::InvalidReturn` with a `reason`.
+- Documented and covered: `passkey_enabled` and `success_url` pass through
+  `SignatureRequests.create` untouched, and the new 422 codes
+  `success_url_invalid`, `redirect_scheme_not_declared` and
+  `passkey_not_enabled_for_organization` surface on `ValidationError#code`.
+  Both features are coming soon and not yet open in production.
 
 v0.1.0
 -------------------------
